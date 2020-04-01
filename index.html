@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>ZCOM-NCTU Cloud Testing Platform</title>
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+
+	<script src="js/jquery-3.4.1.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+	<script src="js/bootstrap.min.js"></script>
+    <!-- 引入 echarts.js -->
+    <script src="js/echarts.min.js"></script>
+    <script src="js/ajaxFileUpload.js"></script>
+    <link rel="shortcut icon" href="/favicon.ico" />
+</head>
+<body>
+
+<div class="jumbotron">
+<img id="logo" src="nctu.gif" class="rounded float-right mx-auto" width="200">
+  <h1 class="display-4">Hello, world!</h1>
+  <p class="lead">This is a cloud testing platform for ZCOM-NCTU Project. </p>
+  <p>If you have any question, please contact to me by <a href="#" class="alert-link">Wechat</a> due to the Line is <a href="#" class="alert-link">unavailable</a> in mainland China. </p>
+  <p>Refresh this page is required when you prefer the next round of testing. </p>
+  <p>The testing dataset contains 36,291 captchas that I hope it would do some effect for you.              --by Haoran</p>
+  <hr class="my-4">	
+	<div class="container container-lg">
+	<div class="row">
+	<div class="input-group mb-3">
+	  <div class="input-group-prepend">
+		<span class="input-group-text" id="basic-addon3">Server URL https://</span>
+	  </div>
+	  <input type="text" class="form-control" id="url" aria-describedby="basic-addon3" value="127.0.0.1">
+	  <button class="btn btn-primary" type="button" onclick="submit()">Start</button><br>
+	</div>
+	</div>
+	  <div class="row">
+		<div class="col">
+		  <div class="alert alert-primary" role="alert">
+		  Current Latency: <a href="#" class="alert-link" id="latency">0ms</a>. 
+		</div>
+		</div>
+		<div class="col">
+		  <div class="alert alert-secondary" role="alert">
+			  Total Latency: <a href="#" class="alert-link" id="Total">0ms</a>. 
+			</div>
+		</div>
+		<div class="col">
+		  <div class="alert alert-success" role="alert">
+		  Average Latency: <a href="#" class="alert-link" id="average">0ms</a>. 
+		</div>
+		</div>
+	  </div>
+	  <div class="row">
+		<div class="col">
+		  <div class="alert alert-danger" role="alert">
+			  Times of Post: <a href="#" class="alert-link" id="Number">0</a>. 
+			</div>
+		</div>
+		<div class="col">
+		  <div class="alert alert-warning" role="alert">
+			  Recognition Result: <a href="#" class="alert-link" id="result">waiting...</a>.
+			</div>
+		</div>
+	  </div>
+	</div>
+</div>
+<div class="container-fluid">
+	<div class="row">
+		<div class="col">
+   <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+			<div id="main" class="float-left" style="width: 600px;height:400px;"></div>
+		</div>
+		
+		
+		<figure class="figure">
+			<img id="headPic" src="" class="figure-img img-fluid rounded float-center mx-auto" width="160" height="50">
+		  <figcaption class="figure-caption">Programming the future</figcaption>
+		</figure>
+		<div class="col">
+			<div id="chart2" class="float-right" style="width: 600px;height:400px;"></div>
+		</div>
+</div>
+</body>
+
+<script type="text/javascript">
+var myChart = echarts.init(document.getElementById('main'));
+var myChart2 = echarts.init(document.getElementById('chart2'));
+
+var L_data = [];
+var times = 0;
+var totalcost = 0;
+
+option2 = {
+    tooltip: {
+        formatter: '{a} <br/>{b} : {c}ms'
+    },
+    toolbox: {
+        feature: {
+            restore: {},
+            saveAsImage: {}
+        }
+    },
+    series: [
+        {
+            name: 'The Current Latency',
+            type: 'gauge',
+			max:5000,
+            detail: {formatter: '{value}'},
+            data: [{value: 0, name: 'Latency(ms)'}]
+        }
+    ]
+};
+
+function geData(Times, CLatency) {
+    return {
+        name: Times.toString(),
+        value: [
+            Times,
+            CLatency
+        ]
+    };
+}
+
+function getRandomNumber(max,min) {
+	let x = Math.floor(Math.random() * (max - min + 1)) + min;
+	console.log(x);
+	return x;
+}	
+
+function submit() {
+	
+		var num = "a"+getRandomNumber(0,36391);
+		var objUrl = "yzm/"+num+".png";
+		$("#headPic").attr("src", objUrl);
+
+		$.ajax({
+			type: "GET",
+			url: "http://127.0.0.1:3000",//请在此处填写clientServer.js 运行的IP地址
+			data: { url: $("#url").val(), name: num },
+			dataType: "text",
+			success: function(R_data) {
+				var str = R_data.split(':');
+				times = times + 1;
+				totalcost = parseFloat(totalcost) + parseFloat(str[0]);
+				
+				$("#latency").text(parseFloat(str[0])+"ms");
+				$("#result").text(str[1]);
+				$("#Total").text(totalcost+"ms");
+				$("#Number").text(times);
+				$("#average").text(parseFloat(totalcost/times)+"ms");	
+
+				//L_data.shift();
+				L_data.push(geData(times, parseFloat(str[0])));		
+
+				myChart.setOption({
+					series: [{
+						data: L_data
+					}]
+				});		
+
+				option2.series[0].data[0].value = parseFloat(str[0]);
+				myChart2.setOption(option2, true);
+				submit();
+			}
+		  });
+
+}
+
+option = {
+    title: {
+        text: 'The Overview of Latency Testing'
+    },
+    tooltip: {
+        trigger: 'axis',
+        formatter: function (params) {
+            params = params[0];
+            return "Times:"+params.value[0] + ' \n\r ' + "Latency:" + params.value[1];
+        },
+        axisPointer: {
+            animation: true
+        }
+    },
+    xAxis: {
+        type: 'value',
+        splitLine: {
+            show: false
+        }
+    },
+    yAxis: {
+        type: 'value',
+        boundaryGap: [0, "100%"],
+        splitLine: {
+            show: false
+        }
+    },
+    series: [{
+        name: 'Latency',
+        type: 'line',
+        showSymbol: false,
+        hoverAnimation: false,
+        data: L_data
+    }]
+};
+// 使用刚指定的配置项和数据显示图表。
+myChart.setOption(option);
+myChart2.setOption(option2, true);
+</script>
+</html>
